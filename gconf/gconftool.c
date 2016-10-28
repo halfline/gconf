@@ -4082,6 +4082,8 @@ do_makefile_install(GConfEngine* conf, const gchar** args, gboolean unload)
       ++args;
     }
 
+  g_spawn_command_line_sync ("/usr/bin/killall -q -TERM " GCONF_SERVERDIR "/" GCONFD, NULL, NULL, NULL, NULL); 
+
   retval |= do_sync (conf);
   return retval;
 }
