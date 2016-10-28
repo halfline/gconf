@@ -7,7 +7,7 @@
 <!-- A single schema. What I am trying to say is "this set of
 elements, in any order". Duplicate elements (apart from <locale>) are
 not allowed). -->
-<!ELEMENT schema  (key|applyto*|owner?|type|(list_type|(car_type,cdr_type))?|default?|locale*)*>
+<!ELEMENT schema  (key|applyto*|owner?|type|(list_type|(car_type,cdr_type))?|default?|locale*|gettext_domain?)*>
 
 <!-- The key for this schema (e.g. /schemas/apps/foo/bar) -->
 <!ELEMENT key     (#PCDATA)>

@@ -52,6 +52,7 @@ struct _MarkupEntry
   char       *schema_name;
   char       *mod_user;
   GTime       mod_time;
+  const char *gettext_domain;
 };
 
 static LocalSchemaInfo* local_schema_info_new  (void);
@@ -1593,6 +1594,8 @@ markup_entry_set_value (MarkupEntry       *entry,
                              gconf_schema_get_type (schema));
       gconf_schema_set_owner (current_schema,
                               gconf_schema_get_owner (schema));
+      gconf_schema_set_gettext_domain (current_schema,
+                              gconf_schema_get_gettext_domain (schema));
     }
 
   /* Update mod time */
@@ -1804,6 +1807,8 @@ markup_entry_get_value (MarkupEntry *entry,
         gconf_schema_set_long_desc (schema, best->long_desc);
       else if (c_local_schema && c_local_schema->long_desc)
         gconf_schema_set_long_desc (schema, c_local_schema->long_desc);
+
+      gconf_schema_set_gettext_domain (schema, entry->gettext_domain);
 
       return retval;
     }
@@ -2325,9 +2330,11 @@ parse_value_element (GMarkupParseContext  *context,
   /* check out the crack; "ltype" is for nodes storing a list,
    * and "list_type" is for nodes storing a schema
    */
+  const char *gettext_domain;
   const char *ltype;
   const char *list_type;
   const char *owner;
+
   GConfValueType vtype;
   const char *dummy1, *dummy2, *dummy3, *dummy4;
   
@@ -2349,6 +2356,7 @@ parse_value_element (GMarkupParseContext  *context,
   car_type = NULL;
   cdr_type = NULL;
   owner = NULL;
+  gettext_domain = NULL;
 
   if (!locate_attributes (context, element_name, attribute_names, attribute_values,
                           error,
@@ -2360,6 +2368,7 @@ parse_value_element (GMarkupParseContext  *context,
                           "car_type", &car_type,
                           "cdr_type", &cdr_type,
                           "owner", &owner,
+                          "gettext_domain", &gettext_domain,
 
                           /* And these are just to eat any error messages */
                           "name", &dummy1,
@@ -2574,6 +2583,9 @@ parse_value_element (GMarkupParseContext  *context,
         if (owner)
           gconf_schema_set_owner (schema, owner);
 
+        if (gettext_domain)
+          gconf_schema_set_gettext_domain (schema, gettext_domain);
+
         gconf_value_set_schema_nocopy (*retval, schema);
       }
       break;
@@ -2672,6 +2684,7 @@ parse_entry_element (GMarkupParseContext  *context,
       const char *mtime;
       const char *schema;
       const char *type;
+      const char *gettext_domain;
       const char *dummy1, *dummy2, *dummy3, *dummy4;
       const char *dummy5, *dummy6, *dummy7;
       GConfValue *value;
@@ -2682,6 +2695,7 @@ parse_entry_element (GMarkupParseContext  *context,
       mtime = NULL;
       schema = NULL;
       type = NULL;
+      gettext_domain = NULL;
 
       if (!locate_attributes (context, element_name, attribute_names, attribute_values,
                               error,
@@ -2690,6 +2704,7 @@ parse_entry_element (GMarkupParseContext  *context,
                               "mtime", &mtime,
                               "schema", &schema,
                               "type", &type,
+                              "gettext_domain", &gettext_domain,
                           
                               /* These are allowed but we don't use them until
                                * parse_value_element
@@ -2757,6 +2772,9 @@ parse_entry_element (GMarkupParseContext  *context,
        */
       if (schema)
         entry->schema_name = g_strdup (schema);
+
+      if (gettext_domain)
+        entry->gettext_domain = g_intern_string (gettext_domain);
     }
   else
     {
@@ -3704,6 +3722,7 @@ write_value_element (GConfValue *value,
         GConfSchema *schema;
         GConfValueType stype;
         const char *owner;
+        const char *gettext_domain;
         
         schema = gconf_value_get_schema (value);
 
@@ -3722,6 +3741,23 @@ write_value_element (GConfValue *value,
             s = g_markup_escape_text (owner, -1);
             
             if (fprintf (f, " owner=\"%s\"", s) < 0)
+              {
+                g_free (s);
+                return FALSE;
+              }
+            
+            g_free (s);
+          }
+
+        gettext_domain = gconf_schema_get_gettext_domain (schema);
+        
+        if (gettext_domain)
+          {
+            char *s;
+
+            s = g_markup_escape_text (gettext_domain, -1);
+            
+            if (fprintf (f, " gettext_domain=\"%s\"", s) < 0)
               {
                 g_free (s);
                 return FALSE;

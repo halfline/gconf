@@ -32,9 +32,10 @@ typedef struct {
   GConfValueType car_type; /* Pair car type of the described entry */
   GConfValueType cdr_type; /* Pair cdr type of the described entry */
   gchar* locale;       /* Schema locale */
-  gchar* owner;        /* Name of creating application */
+  const gchar* owner;        /* Name of creating application */
   gchar* short_desc;   /* 40 char or less description, no newlines */
   gchar* long_desc;    /* could be a paragraph or so */
+  const gchar* gettext_domain; /* description gettext domain */
   GConfValue* default_value; /* Default value of the key */
 } GConfRealSchema;
 
@@ -63,7 +64,6 @@ gconf_schema_free (GConfSchema* sc)
   g_free (real->locale);
   g_free (real->short_desc);
   g_free (real->long_desc);
-  g_free (real->owner);
 
   if (real->default_value)
     gconf_value_free (real->default_value);
@@ -91,7 +91,9 @@ gconf_schema_copy (const GConfSchema* sc)
 
   dest->long_desc = g_strdup (real->long_desc);
 
-  dest->owner = g_strdup (real->owner);
+  dest->gettext_domain = real->gettext_domain;
+
+  dest->owner = real->owner;
 
   dest->default_value = real->default_value ? gconf_value_copy (real->default_value) : NULL;
   
@@ -136,6 +138,17 @@ gconf_schema_set_locale (GConfSchema* sc, const gchar* locale)
     REAL_SCHEMA (sc)->locale = NULL;
 }
 
+void
+gconf_schema_set_gettext_domain (GConfSchema* sc, const gchar* domain)
+{
+  g_return_if_fail (domain == NULL || g_utf8_validate (domain, -1, NULL));
+  
+  if (domain)
+    REAL_SCHEMA (sc)->gettext_domain = g_intern_string (domain);
+  else 
+    REAL_SCHEMA (sc)->gettext_domain = NULL;
+}
+
 void          
 gconf_schema_set_short_desc (GConfSchema* sc, const gchar* desc)
 {
@@ -169,11 +182,8 @@ gconf_schema_set_owner (GConfSchema* sc, const gchar* owner)
 {
   g_return_if_fail (owner == NULL || g_utf8_validate (owner, -1, NULL));
   
-  if (REAL_SCHEMA (sc)->owner)
-    g_free (REAL_SCHEMA (sc)->owner);
-
   if (owner)
-    REAL_SCHEMA (sc)->owner = g_strdup (owner);
+    REAL_SCHEMA (sc)->owner = g_intern_string (owner);
   else
     REAL_SCHEMA (sc)->owner = NULL;
 }
@@ -221,6 +231,14 @@ gconf_schema_validate (const GConfSchema *sc,
     }
 
   if (real->long_desc && !g_utf8_validate (real->long_desc, -1, NULL))
+    {
+      g_set_error (err, GCONF_ERROR,
+                   GCONF_ERROR_FAILED,
+                   _("Schema contains invalid UTF-8"));
+      return FALSE;
+    }
+
+  if (real->gettext_domain && !g_utf8_validate (real->gettext_domain, -1, NULL))
     {
       g_set_error (err, GCONF_ERROR,
                    GCONF_ERROR_FAILED,
@@ -299,11 +317,32 @@ gconf_schema_get_locale (const GConfSchema *schema)
 }
 
 const char*
+gconf_schema_get_gettext_domain (const GConfSchema *schema)
+{
+  g_return_val_if_fail (schema != NULL, NULL);
+
+  return REAL_SCHEMA (schema)->gettext_domain;
+}
+
+static inline const char *
+schema_translate (const GConfSchema *schema,
+                  const char        *string)
+{
+  if (REAL_SCHEMA (schema)->gettext_domain)
+    {
+      bind_textdomain_codeset (REAL_SCHEMA (schema)->gettext_domain, "UTF-8");
+      return g_dgettext(REAL_SCHEMA (schema)->gettext_domain, string);
+    }
+  else
+    return string;
+}
+
+const char*
 gconf_schema_get_short_desc (const GConfSchema *schema)
 {
   g_return_val_if_fail (schema != NULL, NULL);
 
-  return REAL_SCHEMA (schema)->short_desc;
+ return schema_translate (schema, REAL_SCHEMA (schema)->short_desc);
 }
 
 const char*
@@ -311,7 +350,7 @@ gconf_schema_get_long_desc (const GConfSchema *schema)
 {
   g_return_val_if_fail (schema != NULL, NULL);
 
-  return REAL_SCHEMA (schema)->long_desc;
+ return schema_translate (schema, REAL_SCHEMA (schema)->long_desc);
 }
 
 const char*

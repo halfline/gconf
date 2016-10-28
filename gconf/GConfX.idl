@@ -16,6 +16,7 @@ struct ConfigSchema {
   string short_desc;
   string long_desc;
   string owner;
+  string gettext_domain;
   // Work around lack of recursive data types
   string encoded_default_value;
 };

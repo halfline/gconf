@@ -3295,6 +3295,7 @@ struct _SchemaInfo {
   GConfValueType cdr_type;
   GConfValue* global_default;
   GHashTable* hash;
+  gchar* gettext_domain;
 };
 
 static int
@@ -3547,6 +3548,15 @@ extract_global_info(xmlNodePtr node,
               else
                 g_printerr (_("WARNING: empty <applyto> node"));
             }
+          else if (strcmp((char *)iter->name, "gettext_domain") == 0)
+            {
+              tmp = (char *)xmlNodeGetContent(iter);
+              if (tmp)
+                {
+                  info->gettext_domain = g_strdup(tmp);
+                  xmlFree(tmp);
+                }
+            }
           else
             g_printerr (_("WARNING: node <%s> not understood below <schema>\n"),
 			iter->name);
@@ -3635,6 +3645,9 @@ process_locale_info(xmlNodePtr node, SchemaInfo* info)
 
   if (info->owner != NULL)
     gconf_schema_set_owner(schema, info->owner);
+
+  if (info->gettext_domain != NULL)
+    gconf_schema_set_gettext_domain(schema, info->gettext_domain);
 
   xmlFree(name);
 
@@ -3765,6 +3778,7 @@ get_schema_from_xml(xmlNodePtr node, gchar **schema_key, GHashTable** schemas_ha
   info.apply_to = NULL;
   info.owner = NULL;
   info.global_default = NULL;
+  info.gettext_domain = NULL;
   info.hash = g_hash_table_new(g_str_hash, g_str_equal);
   
   extract_global_info(node, &info);
@@ -3800,6 +3814,8 @@ get_schema_from_xml(xmlNodePtr node, gchar **schema_key, GHashTable** schemas_ha
           else if (strcmp((char *)iter->name, "default") == 0)
             ;  /* nothing */
           else if (strcmp((char *)iter->name, "applyto") == 0)
+            ;  /* nothing */
+          else if (strcmp((char *)iter->name, "gettext_domain") == 0)
             ;  /* nothing */
           else if (strcmp((char *)iter->name, "locale") == 0)
             {

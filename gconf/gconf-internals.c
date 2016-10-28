@@ -513,6 +513,7 @@ gconf_fill_corba_schema_from_gconf_schema(const GConfSchema *sc,
   cs->short_desc = CORBA_string_dup (gconf_schema_get_short_desc (sc) ? gconf_schema_get_short_desc (sc) : "");
   cs->long_desc = CORBA_string_dup (gconf_schema_get_long_desc (sc) ? gconf_schema_get_long_desc (sc) : "");
   cs->owner = CORBA_string_dup (gconf_schema_get_owner (sc) ? gconf_schema_get_owner (sc) : "");
+  cs->gettext_domain = CORBA_string_dup (gconf_schema_get_gettext_domain (sc) ? gconf_schema_get_gettext_domain (sc) : "");
 
   {
     gchar* encoded;
@@ -598,6 +599,14 @@ gconf_schema_from_corba_schema(const ConfigSchema* cs)
         gconf_log (GCL_ERR, _("Invalid UTF-8 in owner for schema"));
       else
         gconf_schema_set_owner(sc, cs->owner);
+    }
+      
+  if (*cs->gettext_domain != '\0')
+    {
+      if (!g_utf8_validate (cs->gettext_domain, -1, NULL))
+        gconf_log (GCL_ERR, _("Invalid UTF-8 in gettext domain for schema"));
+      else
+        gconf_schema_set_gettext_domain(sc, cs->gettext_domain);
     }
       
   {

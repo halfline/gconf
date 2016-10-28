@@ -48,6 +48,8 @@ void gconf_schema_set_cdr_type             (GConfSchema    *sc,
                                             GConfValueType  type);
 void gconf_schema_set_locale               (GConfSchema    *sc,
                                             const gchar    *locale);
+void gconf_schema_set_gettext_domain       (GConfSchema    *sc,
+                                            const gchar    *domain);
 void gconf_schema_set_short_desc           (GConfSchema    *sc,
                                             const gchar    *desc);
 void gconf_schema_set_long_desc            (GConfSchema    *sc,
@@ -65,6 +67,7 @@ GConfValueType gconf_schema_get_list_type     (const GConfSchema *schema);
 GConfValueType gconf_schema_get_car_type      (const GConfSchema *schema);
 GConfValueType gconf_schema_get_cdr_type      (const GConfSchema *schema);
 const char*    gconf_schema_get_locale        (const GConfSchema *schema);
+const char*    gconf_schema_get_gettext_domain(const GConfSchema *schema);
 const char*    gconf_schema_get_short_desc    (const GConfSchema *schema);
 const char*    gconf_schema_get_long_desc     (const GConfSchema *schema);
 const char*    gconf_schema_get_owner         (const GConfSchema *schema);
